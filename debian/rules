@@ -1,0 +1,21 @@
+#!/usr/bin/make -f
+
+SHELL := /bin/bash
+
+override_dh_python3:
+	dh_python3 usr/share/virt-manager
+
+override_dh_auto_install:
+	python3 setup.py \
+		--no-update-icon-cache \
+		--no-compile-schemas \
+		install --no-compile -O1 --root=debian/tmp
+	find debian/tmp/usr/share/virt-manager -type f -name '*.pyc' -exec rm -rf {} \;
+	fdupes -s debian/tmp/usr/share/virt-manager
+
+override_dh_auto_test:
+
+override_dh_auto_clean:
+
+%:
+	dh $@ --buildsystem=pybuild --with python3
