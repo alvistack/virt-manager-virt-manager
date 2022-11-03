@@ -45,7 +45,7 @@ def _get_param(name, default):  # pragma: no cover
         return default
 
 
-__version__ = "3.2.0"
+__version__ = "3.2.0+20220213c57b0f7d"
 
 
 class _BuildConfig(object):

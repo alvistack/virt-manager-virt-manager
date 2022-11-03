@@ -1,94 +1,85 @@
-# -*- rpm-spec -*-
+# Copyright 2022 Wong Hoi Sing Edison <hswong3i@pantarei-design.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-%global with_guestfs               0
-%global default_hvs                "qemu,xen,lxc"
-
-
-# End local config
+%global debug_package %{nil}
 
 Name: virt-manager
-Version: 3.2.0
+Epoch: 100
+Version: 3.2.0+20220213c57b0f7d
 Release: 1%{?dist}
-%global verrel %{version}-%{release}
-
+BuildArch: noarch
 Summary: Desktop tool for managing virtual machines via libvirt
 License: GPLv2+
-BuildArch: noarch
-URL: https://virt-manager.org/
-Source0: https://virt-manager.org/download/sources/%{name}/%{name}-%{version}.tar.gz
-
-
-Requires: virt-manager-common = %{verrel}
-Requires: python3-gobject >= 3.31.3
-Requires: gtk3 >= 3.22.0
-Requires: libvirt-glib >= 0.0.9
-Requires: gtk-vnc2
-Requires: spice-gtk3
-
-# We can work with gtksourceview 3 or gtksourceview4, pick the latest one
-Requires: gtksourceview4
-
-# virt-manager is one of those apps that people will often install onto
-# a headless machine for use over SSH. This means the virt-manager dep
-# chain needs to provide everything we need to get a usable app experience.
-# Unfortunately nothing in our chain has an explicit dep on some kind
-# of usable gsettings backend, so we explicitly depend on dconf so that
-# user settings actually persist across app runs.
-Requires: dconf
-
-# The vte291 package is actually the latest vte with API version 2.91, while
-# the vte3 package is effectively a compat package with API version 2.90.
-# virt-manager works fine with either, so pull the latest bits so there's
-# no ambiguity.
-Requires: vte291
-
-# Weak dependencies for the common virt-manager usecase
-Recommends: (libvirt-daemon-kvm or libvirt-daemon-qemu)
-Recommends: libvirt-daemon-config-network
-
-# Optional inspection of guests
-Suggests: python3-libguestfs
-
+URL: https://github.com/virt-manager/virt-manager/tags
+Source0: %{name}_%{version}.orig.tar.gz
+BuildRequires: fdupes
 BuildRequires: gettext
+BuildRequires: python-rpm-macros
 BuildRequires: python3-devel
 BuildRequires: python3-docutils
 BuildRequires: python3-setuptools
-
+Requires: dconf
+Requires: gtk-vnc2
+Requires: gtk3
+Requires: gtksourceview4
+Requires: libvirt-glib >= 0.0.9
+Requires: python3
+Requires: python3-gobject
+Requires: spice-gtk3
+Requires: virt-manager-common = %{epoch}:%{version}-%{release}
+Requires: vte291
 
 %description
-Virtual Machine Manager provides a graphical tool for administering virtual
-machines for KVM, Xen, and LXC. Start, stop, add or remove virtual devices,
-connect to a graphical or serial console, and see resource usage statistics
-for existing VMs on local or remote machines. Uses libvirt as the backend
-management API.
+Virtual Machine Manager provides a graphical tool for administering
+virtual machines for KVM, Xen, and LXC. Start, stop, add or remove
+virtual devices, connect to a graphical or serial console, and see
+resource usage statistics for existing VMs on local or remote machines.
+Uses libvirt as the backend management API.
 
+%prep
+%autosetup -T -c -n %{name}_%{version}-%{release}
+tar -zx -f %{S:0} --strip-components=1 -C .
 
-%package common
+%build
+%py3_build
+
+%install
+python3 setup.py \
+    --no-update-icon-cache \
+    --no-compile-schemas \
+    install --no-compile -O1 --root=%{buildroot}
+find %{buildroot}%{_datadir}/virt-manager -type f -name '*.pyc' -exec rm -rf {} \;
+fdupes -qnrps %{buildroot}%{_datadir}/virt-manager
+
+%package -n virt-common
 Summary: Common files used by the different Virtual Machine Manager interfaces
-
+Requires: genisoimage
+Requires: libosinfo >= 0.2.10
 Requires: python3-argcomplete
+Requires: python3-gobject-base
 Requires: python3-libvirt
 Requires: python3-libxml2
 Requires: python3-requests
-Requires: libosinfo >= 0.2.10
-# Required for gobject-introspection infrastructure
-Requires: python3-gobject-base
-# Required for pulling files from iso media
-Requires: xorriso
 
-%description common
+%description -n virt-common
 Common files used by the different virt-manager interfaces, as well as
 virt-install related tools.
 
-
 %package -n virt-install
 Summary: Utilities for installing virtual machines
-
-Requires: virt-manager-common = %{verrel}
-# For 'virsh console'
 Requires: libvirt-client
-
-Provides: virt-install
+Requires: virt-manager-common = %{epoch}:%{version}-%{release}
 Provides: virt-clone
 Provides: virt-xml
 
@@ -97,66 +88,42 @@ Package includes several command line utilities, including virt-install
 (build and install new VMs) and virt-clone (clone an existing virtual
 machine).
 
-
-%prep
-%autosetup -p1
-
-
-%build
-%if %{default_hvs}
-%global _default_hvs --default-hvs %{default_hvs}
-%endif
-
-./setup.py configure \
-    %{?_default_hvs}
-
-
-%install
-./setup.py \
-    --no-update-icon-cache --no-compile-schemas \
-    install -O1 --root=%{buildroot}
-%find_lang %{name}
-
-%if 0%{?py_byte_compile:1}
-# https://docs.fedoraproject.org/en-US/packaging-guidelines/Python_Appendix/#manual-bytecompilation
-%py_byte_compile %{__python3} %{buildroot}%{_datadir}/virt-manager/
-%endif
-
-
-
 %files
-%{_bindir}/%{name}
-
-%{_mandir}/man1/%{name}.1*
-
-%{_datadir}/%{name}/ui/*.ui
-%{_datadir}/%{name}/virtManager
-
-%{_datadir}/%{name}/icons
-%{_datadir}/icons/hicolor/*/apps/*
-
-%{_datadir}/applications/%{name}.desktop
+%doc COPYING
+%doc NEWS.md
+%doc README.md
+%dir %{_datadir}/glib-2.0
+%dir %{_datadir}/glib-2.0/schemas
+%dir %{_datadir}/icons/hicolor
+%dir %{_datadir}/icons/hicolor/*
+%dir %{_datadir}/icons/hicolor/*/apps
+%dir %{_datadir}/virt-manager/ui
+%{_bindir}/virt-manager
+%{_datadir}/applications/virt-manager.desktop
 %{_datadir}/glib-2.0/schemas/org.virt-manager.virt-manager.gschema.xml
-%{_datadir}/metainfo/%{name}.appdata.xml
+%{_datadir}/icons/hicolor/*/apps/*
+%{_datadir}/metainfo/virt-manager.appdata.xml
+%{_datadir}/virt-manager/icons
+%{_datadir}/virt-manager/ui/*.ui
+%{_datadir}/virt-manager/virtManager
+%{_mandir}/man1/virt-manager.1*
 
-
-%files common -f %{name}.lang
-%license COPYING
-%doc README.md NEWS.md
-
-%dir %{_datadir}/%{name}
-%{_datadir}/%{name}/virtinst
-
+%files -n virt-common
+%dir %{_datadir}/virt-manager
+%dir %{_datadir}/locale/*
+%dir %{_datadir}/locale/*/LC_MESSAGES
+%{_datadir}/locale/*/LC_MESSAGES/virt-manager.mo
+%{_datadir}/virt-manager/virtinst
 
 %files -n virt-install
-%{_mandir}/man1/virt-install.1*
+%{_bindir}/virt-clone
+%{_bindir}/virt-install
+%{_bindir}/virt-xml
+%{_datadir}/bash-completion/completions/virt-clone
+%{_datadir}/bash-completion/completions/virt-install
+%{_datadir}/bash-completion/completions/virt-xml
 %{_mandir}/man1/virt-clone.1*
+%{_mandir}/man1/virt-install.1*
 %{_mandir}/man1/virt-xml.1*
 
-%{_datadir}/bash-completion/completions/virt-install
-%{_datadir}/bash-completion/completions/virt-clone
-%{_datadir}/bash-completion/completions/virt-xml
-
-%{_bindir}/virt-install
-%{_bindir}/virt-clone
-%{_bindir}/virt-xml
+%changelog

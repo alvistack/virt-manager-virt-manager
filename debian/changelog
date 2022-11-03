@@ -1,0 +1,5 @@
+virt-manager (100:3.2.0+20220213c57b0f7d-1) UNRELEASED; urgency=medium
+
+  * https://github.com/virt-manager/virt-manager/commit/c57b0f7d
+
+ -- Wong Hoi Sing Edison <hswong3i@gmail.com>  Wed, 16 Feb 2022 10:50:53 +0800
