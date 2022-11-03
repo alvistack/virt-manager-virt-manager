@@ -1,0 +1,7 @@
+*.substvars
+*debhelper*
+.debhelper
+files
+tmp
+virt-manager
+virtinst

@@ -259,6 +259,8 @@ class my_install(setuptools.command.install.install):
         setuptools.command.install.install.finalize_options(self)
 
     def run(self):
+        setuptools.command.install.install.run(self)
+
         if not self.distribution.no_update_icon_cache:
             print("running gtk-update-icon-cache")
             icon_path = os.path.join(self.install_data, "share/icons/hicolor")
@@ -269,8 +271,6 @@ class my_install(setuptools.command.install.install):
             gschema_install = os.path.join(self.install_data,
                 "share/glib-2.0/schemas")
             self.spawn(["glib-compile-schemas", gschema_install])
-
-        setuptools.command.install.install.run(self)
 
 
 ###################
@@ -525,6 +525,9 @@ setuptools.setup(
             glob.glob("virtinst/install/*.py")),
     ],
 
+    # stop setuptools 61+ thinking we want to include everything automatically
+    py_modules=[],
+
     cmdclass={
         'build': my_build,
         'build_i18n': my_build_i18n,
@@ -542,4 +545,5 @@ setuptools.setup(
     },
 
     distclass=VMMDistribution,
+    packages=[],
 )
