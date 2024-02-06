@@ -17,3 +17,6 @@
 
 /virt-manager.spec
 /virtinst/build.cfg
+
+.pybuild
+*.egg-info

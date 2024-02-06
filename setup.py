@@ -167,9 +167,11 @@ from %(pkgname)s import %(filename)s
     def _make_man_pages(self):
         rstbin = shutil.which("rst2man")
         if not rstbin:
+            rstbin = shutil.which("rst2man-3.6")
+        if not rstbin:
             rstbin = shutil.which("rst2man.py")
         if not rstbin:
-            sys.exit("Didn't find rst2man or rst2man.py")
+            sys.exit("Didn't find rst2man or rst2man-3.6 or rst2man.py")
 
         for path in glob.glob("man/*.rst"):
             base = os.path.basename(path)
